@@ -4,6 +4,7 @@ const { AuthenticationError } = require("apollo-server-express");
 const { signToken } = require("../utils/auth");
 
 const resolvers = {
+  // AKA the CREATE section
   Query: {
     me: async (parent, args, context) => {
       if (context.user) {
@@ -20,8 +21,8 @@ const resolvers = {
     users: async () => {
       return User.find()
         .select("-__v -password")
-        .populate("thoughts")
-        .populate("friends");
+        .populate("friends")
+        .populate("thoughts");
     },
     user: async (parent, { username }) => {
       return User.findOne({ username })
@@ -37,6 +38,7 @@ const resolvers = {
       return Thought.findOne({ _id });
     },
   },
+  //aka the PUT/POST/DELETE section
   Mutation: {
     addUser: async (parent, args) => {
       const user = await User.create(args);
@@ -87,9 +89,21 @@ const resolvers = {
       }
     
       throw new AuthenticationError('You need to be logged in!');
-    }
+    },
+    addFriend: async (parent, { friendId }, context) => {
+      if (context.user) {
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: context.user._id },
+          { $addToSet: { friends: friendId } },
+          { new: true }
+        ).populate('friends');
     
-  },
+        return updatedUser;
+      }
+    
+      throw new AuthenticationError('You need to be logged in!');
+    }  
+  }
 };
 
 module.exports = resolvers;
